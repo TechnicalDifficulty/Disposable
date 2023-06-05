@@ -1,4 +1,5 @@
 ﻿
+using Disposable.Entity;
 using Microsoft.EntityFrameworkCore;
 
 public class MyDbContext : DbContext,IDisposable
@@ -9,7 +10,8 @@ public class MyDbContext : DbContext,IDisposable
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.UseSqlServer("Server=tcp:azure-disposable-server.database.windows.net,1433;Initial Catalog=app-disposable-db;Persist Security Info=False;User ID=azuresql;Password=yasa@azure*12;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
+        optionsBuilder.UseSqlServer("Data Source=99X-SL-PF2N966F;Initial Catalog=AuthAPIDb;Integrated Security=True;Encrypt=False;");
+            //"Server=tcp:azure-disposable-server.database.windows.net,1433;Initial Catalog=app-disposable-db;Persist Security Info=False;User ID=azuresql;Password=yasa@azure*12;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
     }
 
     public void DoSomethingWithEntities()
@@ -48,12 +50,6 @@ public class MyDbContext : DbContext,IDisposable
     }
 }
 
-public class Student
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public int Age { get; set; }
-}
 
 public class Program
 {
@@ -67,12 +63,12 @@ public class Program
 
         // #region Program2
         // Using "using" statement to automatically execute disposable
-        //Program2();
+        Program2();
         // #endregion
 
         // #region Program3
         // Using finalizer
-        Program3();
+        //Program3();
         // #endregion
 
         Console.WriteLine("Program completed.");
@@ -134,7 +130,6 @@ public class Program
 
         // Uncomment the line below to test finalizer
         myObject = null;
-        GC.WaitForPendingFinalizers();
         Thread.Sleep(10000);
     }
 

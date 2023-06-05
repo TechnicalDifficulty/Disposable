@@ -1,45 +1,22 @@
-<!-----
+# Disposable
 
-Yay, no errors, warnings, or alerts!
-
-Conversion time: 0.523 seconds.
-
-
-Using this Markdown file:
-
-1. Paste this output into your source file.
-2. See the notes and action items below regarding this conversion run.
-3. Check the rendered output (headings, lists, code blocks, tables) for proper
-   formatting and use a linkchecker before you publish this page.
-
-Conversion notes:
-
-* Docs to Markdown version 1.0β34
-* Mon May 29 2023 23:17:22 GMT-0700 (PDT)
-* Source doc: IDisposable
-* Tables are currently converted to HTML tables.
------>
+ \
+Primarily implemented to release unmanaged resources
 
 
-
-## IDisposable
-
-
-## What is IDisposable
+# What is IDisposable
 
 The IDisposable interface is a part of the .NET Framework and is used in C# and other .NET languages. 
 
 It provides a mechanism for releasing unmanaged resources such as file handles, database connections, and network connections. 
 
-The primary purpose of the IDisposable interface is to allow objects to release these resources 
+The primary purpose of the IDisposable interface is to allow objects to release these resources explicitly when they are no longer needed, 
 
-explicitly when they are no longer needed, rather than relying on the automatic garbage collection process.
+rather than relying on the automatic garbage collection process.
 
+# When & Where to use IDisposable | .NET Core , EF Core
 
-## When & Where to use IDisposable | .NET Core , EF Core
-
-
-### Dealing with Files: 
+## Dealing with Files: 
 
 If your class is reading from or writing to a file, it should implement IDisposable. This is because file handles are a finite system resource. If they're not released, the system may run out of file handles.
 
@@ -54,7 +31,7 @@ using (FileStream fileStream = File.Open("myfile.txt", FileMode.Open))
 
 
 
-### Dealing with Database Connections: 
+## Dealing with Database Connections: 
 
 Connections to databases are also limited resources. If these are not released, it may not be possible to open new connections.
 
@@ -69,7 +46,7 @@ using (DbConnection connection = new DbConnection(connectionString))
 
 
 
-### Dealing with Network Connections: 
+## Dealing with Network Connections: 
 
 Similar to database connections, network connections should also be released when they are no longer needed.
 
@@ -85,11 +62,11 @@ using (TcpClient tcpClient = new TcpClient())
 
 
 
-## Ways of implementing Disposable
+# Ways of implementing Disposable
 
 
 
-## 1. Implementing IDisposable Interface:
+# 1. Implementing IDisposable Interface:
 
 ```
 public class MyClass : IDisposable
@@ -114,10 +91,14 @@ public class MyClass : IDisposable
         Dispose(true);
         GC.SuppressFinalize(this);
     }}
- ```
+```
 
+# 2. Using Statement:
 
-## 2. Using Statement:
+The using statement ensures that the Dispose method is called automatically when the using block is exited, even if an exception occurs.  
+\
+_<span style="text-decoration:underline;">Assuming that MyClass implemented IDisposable</span>_
+
 
 ```
 using (MyClass myObject = new MyClass())
@@ -128,11 +109,11 @@ using (MyClass myObject = new MyClass())
 
 
 
-The using statement ensures that the Dispose method is called automatically when the using block is exited, even if an exception occurs.
+# 3. Finalizer (destructor):
 
 
+ The finalizer is a backup mechanism that ensures resources are released even if Dispose is not called explicitly. However, it is recommended to call Dispose explicitly to release resources in a timely manner.
 
-## 3. Finalizer (destructor):
 
 ```
 public class MyClass : IDisposable
@@ -171,29 +152,138 @@ public class MyClass : IDisposable
 
 
 
-The finalizer is a backup mechanism that ensures resources are released even if Dispose is not called explicitly. However, it is recommended to call Dispose explicitly to release resources in a timely manner.
-
-
-## Best practices
+# WHATs? WHYs? HOWs?
 
 
 
+# 1. **What is a Finalizer**
 
-## 1. Implement the IDisposable Interface
+A finalizer is a special method or function that is executed when an object is about to be destroyed or garbage collected by the system.
+
+The purpose of a finalizer is to provide a mechanism for releasing resources that are not automatically managed by the language's memory management system. \
  \
-Classes that need to manage unmanaged resources or implement cleanup logic should implement the IDisposable interface. This ensures that resources are properly released when they are no longer needed. 
-
-## 2. Follow the Dispose Pattern
+**Is it recommended?** \
  \
-The Dispose pattern consists of implementing a Dispose method to release resources and a finalizer (destructor) as a backup mechanism. The Dispose method should be responsible for releasing both managed and unmanaged resources, while the finalizer is used to release unmanaged resources if Dispose is not explicitly called. 
+finalizers are not always recommended. This is because finalizers can introduce performance overhead and are not guaranteed to be executed promptly or at all 
 
-## 3. Use a Virtual Dispose Method (optional)
+
+
+# 2. **Why we use** `GC.SuppressFinalize(this);`
+
+This line is called after the `Dispose(true)` method is invoked. It instructs the garbage collector (GC) to suppress the finalization of the object. 
+
+In other words, it tells the GC that the object's finalizer does not need to be called because all necessary cleanup has already been performed explicitly in the Dispose method.
+
+By calling `GC.SuppressFinalize(this)`, you're informing the GC that the object has been properly disposed of and its finalizer is no longer required. This allows the GC to skip the finalization step and immediately reclaim the object's memory, leading to more efficient memory management.
+
+**Is this necessary?**
+
+A finalizer isn't necessary if your object implements IDisposable, but if you have a finalizer you should implement IDisposable to allow deterministic cleanup of your class.
+
+For objects that don't hold unmanaged resources, implementing a finalizer and using GC.SuppressFinalize(this) may not be necessary.
+
+
+
+# 3. **What is Dispose() and Dispose(bool) ?**
+
+**Dispose() method:** **non-virtual (NotOverridable)**
+
+This method is the public interface of the IDisposable pattern. It allows clients of your class to explicitly release any resources it holds. The Dispose() method is typically called when the client is finished using the object and wants to release the resources immediately.
+
+**Dispose(bool) method: protected virtual void**
+
+This method is a protected virtual method used for actual cleanup operations. 
+
+**It is called by both the Dispose() method (when disposing is true) and the finalizer (when disposing is false). \**
+
+ ‘protected’ limit its visibility. By doing so, it ensures that only derived classes and classes within the same inheritance hierarchy can directly call this method. It prevents external code from accidentally invoking the Dispose(bool disposing) method directly, which could lead to unexpected behavior.
+
+ ‘virtual’, it allows derived classes to override the implementation if necessary. This is useful when a derived class needs to add additional cleanup logic specific to its own resources. By providing a virtual method, you enable polymorphism and customization of the cleanup behavior in derived classes.
+
+
+
+
+# 4. **How to use lambda operations for Dispose**
+
+**Using lambda**
+
+
+```
+public class Foo : IDisposable
+{
+    private Bar _bar = new Bar();
+
+    public void Dispose() => _bar.Dispose();
+}
+```
+
+
+**Without using lambda**
+
+
+```
+public class Foo : IDisposable
+{
+    private Bar _bar = new Bar();
+
+    public void Dispose()
+    {
+        _bar.Dispose();
+    }
+}
+```
+
+
+
+# **Lambda operation with finalizer (Dispose(bool))**
+
+
+```
+public void Dispose()
+    {   Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+```
+
+
+
+```
+public void Dispose() => Dispose(true);
+
+~ClassName() => Dispose(false);
+
+private void Dispose(bool disposing)
+{
+    if (disposing)
+    {
+        // Dispose managed resources here
+    }
+    // Dispose unmanaged resources here
+    GC.SuppressFinalize(this);
+}
+```
+
+
+
+# Best practices
+
+
+
+### 1. **Implement the IDisposable Interface** 
  
-If you anticipate derived classes that may need to provide their specific cleanup logic, consider using a virtual Dispose method in the base class. This allows derived classes to override the method and customize the cleanup behavior as required \
+Classes that need to manage unmanaged resources or implement cleanup logic should implement the IDisposable interface. This ensures that resources are properly released when they are no longer needed.
+
+### 2. **Follow the Dispose Pattern** 
+
+The Dispose pattern consists of implementing a Dispose method to release resources and a finalizer (destructor) as a backup mechanism. The Dispose method should be responsible for releasing both managed and unmanaged resources, while the finalizer is used to release unmanaged resources if Dispose is not explicitly called.
+
+### 3. **Use a Virtual Dispose Method (optional)** 
+
+If you anticipate derived classes that may need to provide their specific cleanup logic, consider using a virtual Dispose method in the base class. This allows derived classes to override the method and customize the cleanup behavior as required 
 Ex: 
 
 
-Base Class Implementation: 
+**Base Class Implementation**: 
 
 
 
@@ -235,8 +325,7 @@ public class MyBaseClass : IDisposable
 
 
 
-Derived Class Implementation: 
-
+**Derived Class Implementation**:
 
 
 
@@ -269,28 +358,26 @@ public class MyDerivedClass : MyBaseClass
 
 
 
+### 4. **Call Dispose Explicitly or Use the Using Statement**:
 
-
-
-
-## 4. Call Dispose Explicitly or Use the Using Statement:
- \
 Call the Dispose method explicitly when they are done using the object. Alternatively, the using statement can be used, ensuring that Dispose is called automatically when the object is no longer needed.
 
-## 5. Dispose Managed Resources First: 
- \
+### 5. **Dispose Managed Resources First**: 
+ 
 When implementing the Dispose method, release managed resources before releasing unmanaged resources. This ensures that any dependencies or references to managed objects are cleaned up before attempting to release unmanaged resources. 
 
-## 6. Suppress Finalization if Disposed 
- \
+### 6. **Suppress Finalization if Disposed** 
+ 
 In the Dispose method, call GC.SuppressFinalize(this) to indicate that finalization (the finalizer) is unnecessary if Dispose has been called explicitly. This improves performance by avoiding unnecessary finalization when the object is already disposed.
 
---------- \
- 
-## Close vs Dispose
- 
-### Using close with a database connection: 
 
+## Additional Notes
+
+
+**Close vs Dispose**
+
+
+**Using close with a database connection:** 
 
 
 ```
@@ -307,11 +394,7 @@ using (SqlConnection connection = new SqlConnection(connectionString))
 }
 ```
 
-
- 
-### Using dispose with a database context (Entity Framework): 
-
-
+**Using dispose with a database context (Entity Framework):** 
 
 ```
 using (var dbContext = new YourDbContext())
@@ -326,10 +409,7 @@ using (var dbContext = new YourDbContext())
 ```
 
 
-### Using BeginTransaction() and Dispose() in a transaction: 
- 
-
-
+**using BeginTransaction() and Dispose() in a transaction:** 
 
 ```
 using (var dbContext = new YourDbContext())
@@ -352,4 +432,3 @@ using (var dbContext = new YourDbContext())
     }
 }
 ```
-
